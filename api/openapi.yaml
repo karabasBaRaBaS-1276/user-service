@@ -1,0 +1,579 @@
+openapi: 3.0.3
+info:
+  title: Пользователи
+  description: 'Авторизация, аутентификация, работа с пользователем'
+  version: 0.0.1
+  contact:
+    name: Роман Осенчаков
+    email: r.osench@inbox.ru
+    url: https://t.me/r_osench
+servers:
+  - url: http://localhost:8080/api/v1
+tags:
+  - name: user
+    description: 'Всё, что можно сделать с пользователем'
+  - name: login
+    description: 'Всё, что можно сделать с учётной записью'
+  - name: oauth
+    description: 'Аутентификация и авторизация через OAuth 2.0'
+paths:
+  /user:
+    post:
+      tags:
+        - user
+        - oauth
+      summary: 'Создать нового пользователя (как альтернатива шага 2 аутентификации пользователя через /oauth/login)'
+      description: |
+        Регистрирует в системе нового пользователя
+      operationId: createUserFull
+      parameters:
+        - $ref: '#/components/parameters/mb-request-id'
+        - name: code
+          in: query
+          description: 'Код авторизации, полученный в результате запроса /oauth/authorize'
+          schema:
+            type: string
+          example: 'authorization_code'
+      requestBody:
+        description: 'Объект для создания пользователя'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFull'
+      responses:
+        '201':
+          description: 'Создано. Если метод используется вне авторизационной цепочки'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdInfo'
+        '302':
+          description: 'Успешная аутентификация через создание нового пользователя. Перенаправление на указанный URI с токеном доступа в URL'
+          headers:
+            Location:
+              description: 'URI для перенаправления после успешной аутентификации'
+              schema:
+                type: string
+                example: 'http://my-bank.ru/ouath/callback'
+            Cache-Control:
+              description: 'Управление кэшированием HTTP-ответа'
+              schema:
+                type: string
+                example: 'no-store, no-cache, must-revalidate'
+            Pragma:
+              description: 'Предоставляет инструкции для обработки страницы со стороны промежуточных кеширующих агентов'
+              schema:
+                type: string
+                example: 'no-cache'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /user/{username}:
+    get:
+      tags:
+        - user
+      summary: 'Поиск пользователя по его username'
+      description: 'Это может сделать только авторизованный пользователь'
+      operationId: getUserByUsername
+      parameters:
+        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/username'
+      responses:
+        '200':
+          description: 'Успешный ответ'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: 'Пользователь не найден'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - user
+      summary: 'Обновить информацию о пользователе'
+      description: 'Это может сделать только авторизованный пользователь'
+      operationId: updateUserByUsername
+      parameters:
+        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/username'
+      requestBody:
+        description: 'Обновить существующего пользователя'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '204':
+          description: 'Успешная операция'
+        '304':
+          description: 'Изменения не требуются'
+        '404':
+          description: 'Пользователь не найден'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - user
+      summary: 'Удаление пользователя'
+      description: 'Это может сделать только авторизованный пользователь'
+      operationId: deleteUserByUsername
+      parameters:
+        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/username'
+      responses:
+        '204':
+          description: 'Успешная операция'
+        '304':
+          description: 'Изменения не требуются'
+        '404':
+          description: 'Пользователь не найден'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /user/{username}/restore:
+    post:
+      tags:
+        - user
+      summary: 'Восстановление ранее удаленного пользователя'
+      description: 'Если вы случайно удалили пользователя с помощью DELETE /user/{username}, то настоящий метод позволит вам его восстановить'
+      operationId: restoreUserByUsername
+      parameters:
+        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/username'
+      responses:
+        '204':
+          description: 'Успешная операция'
+        '404':
+          description: 'Пользователь не найден'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /oauth/authorize:
+    get:
+      tags:
+        - oauth
+      summary: 'Шаг 1. Инициализация авторизации через OAuth 2.0'
+      description: 'Инициирует процесс аутентификации и авторизации пользователя'
+      operationId: initiateOAuthAuthorization
+      parameters:
+        - name: response_type
+          in: query
+          description: 'Тип ответа. Используйте "code" для Authorization Code Flow'
+          required: true
+          schema:
+            type: string
+            enum: ['code']
+          example: 'code'
+        - name: client_id
+          in: query
+          description: 'Уникальный идентификатор приложения'
+          required: true
+          schema:
+            type: string
+          example: 'myBank'
+        - name: redirect_uri
+          in: query
+          description: 'URI, куда будет направлен код авторизации после успешной аутентификации пользователя'
+          required: true
+          schema:
+            type: string
+          example: 'http://my-bank.ru/ouath/callback'
+        - name: scope
+          in: query
+          description: 'Область доступа (scope). Определяет, к каким ресурсам приложение запрашивает доступ'
+          required: true
+          schema:
+            type: string
+          example: 'read'
+        - name: state
+          in: query
+          description: 'Необязательный параметр для предотвращения атаки CSRF'
+          schema:
+            type: string
+          example: 'sUlWkvWS'
+        - name: code_challenge_method
+          in: query
+          description: 'Способ шифрования, которым был зашифрован проверочный код (PKCE).'
+          schema:
+            type: string
+            enum: [S256]
+        - name: code_challenge
+          in: query
+          description: 'Зашифрованный проверочный код (PKCE).'
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 'Перенаправление на страницу аутентификации пользователя'
+          headers:
+            Location:
+              description: 'URI для перенаправления после успешной аутентификации'
+              schema:
+                type: string
+                example: 'http://my-bank.ru/ouath/callback'
+            Cache-Control:
+              description: 'Управление кэшированием HTTP-ответа'
+              schema:
+                type: string
+                example: 'no-store, no-cache, must-revalidate'
+            Pragma:
+              description: 'Предоставляет инструкции для обработки страницы со стороны промежуточных кеширующих агентов'
+              schema:
+                type: string
+                example: 'no-cache'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /oauth/login:
+    post:
+      tags:
+        - oauth
+      summary: 'Шаг 2. Аутентификация пользователя'
+      description: 'Позволяет пользователю войти в систему, предоставив свои учетные данные'
+      operationId: loginUser
+      parameters:
+        - name: code
+          in: query
+          description: 'Код авторизации, полученный в результате запроса /oauth/authorize'
+          required: true
+          schema:
+            type: string
+          example: 'authorization_code'
+      requestBody:
+        required: true
+        description: 'Данные пользователя для аутентификации'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      responses:
+        '302':
+          description: 'Успешная аутентификация. Перенаправление на указанный URI с токеном доступа в URL'
+          headers:
+            Location:
+              description: 'URI для перенаправления после успешной аутентификации'
+              schema:
+                type: string
+                example: 'http://my-bank.ru/ouath/callback'
+            Cache-Control:
+              description: 'Управление кэшированием HTTP-ответа'
+              schema:
+                type: string
+                example: 'no-store, no-cache, must-revalidate'
+            Pragma:
+              description: 'Предоставляет инструкции для обработки страницы со стороны промежуточных кеширующих агентов'
+              schema:
+                type: string
+                example: 'no-cache'
+        default:
+          description: 'Что-то пошло не так'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /oauth/token:
+    post:
+      tags:
+        - oauth
+      summary: 'Шаг 3. Обмен кода на токен'
+      description: 'Обменивает код авторизации на токен доступа'
+      operationId: exchangeAuthorizationCode
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccessTokenRequest'
+      responses:
+        '200':
+          description: 'Успешный обмен. Возвращает токен доступа'
+          headers:
+            Cache-Control:
+              description: 'Управление кэшированием HTTP-ответа'
+              schema:
+                type: string
+                example: 'no-store, no-cache, must-revalidate'
+            Pragma:
+              description: 'Предоставляет инструкции для обработки страницы со стороны промежуточных кеширующих агентов'
+              schema:
+                type: string
+                example: 'no-cache'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        default:
+          description: 'Ошибка обмена кода авторизации на токен доступа'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /oauth/jwks:
+    get:
+      tags:
+        - oauth
+      summary: 'Получение открытых ключей JSON Web Key Set (JWKS)'
+      description: 'Возвращает JWKS, содержащий открытые ключи для проверки подписи токенов.'
+      responses:
+        '200':
+          description: 'Успешный ответ'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/jwk'
+        default:
+          description: 'Ошибка обмена кода авторизации на токен доступа'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  parameters:
+    mb-request-id:
+      name: mb-request-id
+      in: header
+      description: 'Уникальный идентификатор запроса'
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 'b11fbded-4f77-4e29-b2b0-1d7dbecf4ceb'
+    username:
+      name: username
+      in: path
+      description: 'Имя пользователя, по которому необходимо вернуть информацию'
+      required: true
+      schema:
+        type: string
+        minLength: 4
+        maxLength: 50
+        pattern: '^[a-zA-Z0-9_@.-]+$'
+        example: 'IvanovIvanIvanovich'
+
+  schemas:
+    UserFull:
+      description: 'Полное описание пользователя'
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            login:
+              $ref: '#/components/schemas/Login'
+    Login:
+      description: 'Описание учетной записи пользователя'
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          description: 'Имя пользователя'
+          type: string
+          minLength: 4
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_@.-]+$'
+          example: 'IvanovIvanIvanovich'
+        password:
+          description: 'Пароль'
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9%*)?@#$!~_.-]+$'
+          example: 'iil8nHRp'
+    User:
+      type: object
+      description: 'Описание пользователя'
+      required:
+        - username
+        - firstName
+        - lastName
+        - email
+      properties:
+        lastName:
+          description: 'Фамилия пользователя'
+          type: string
+          example: 'Иванов'
+          maxLength: 50
+        firstName:
+          description: 'Имя пользователя'
+          type: string
+          maxLength: 50
+          example: 'Иван'
+        middleName:
+          description: 'Отчество пользователя'
+          type: string
+          maxLength: 50
+          example: 'Иванович'
+        email:
+          description: Email
+          type: string
+          pattern: '^[a-zA-Zа-яА-Я0-9.-._]+@[a-zA-Z0-9.-]+.[a-zA-Z0-9_-]+$'
+          example: 'ivan@mail.ru'
+    UserIdInfo:
+      type: object
+      description: 'Информация об идентификаторе пользователя'
+      required:
+        - id
+      properties:
+        id:
+          description: 'Id пользователя'
+          type: string
+          format: uuidv7
+          example: '018c21f9-2033-79cf-97bc-7d7ae6e8a8d7'
+        active:
+          description: |
+            Состояние пользователя:
+            * true - пользователь активен
+            * false - пользователь не активен (заблокирован)
+          type: boolean
+          example: false
+    AccessTokenRequest:
+      type: object
+      description: 'Запрос на токен доступа'
+      required:
+        - grant_type
+        - code
+        - redirect_uri
+        - client_id
+        - code_verifier
+      properties:
+        grant_type:
+          description: 'Код стратегии, которую нужно использовать при обмене кода авторизации на токен.'
+          type: string
+          enum: ['authorization_code']
+          example: 'authorization_code'
+        code:
+          description: 'Код авторизации, который необходимо обменять на токен.'
+          type: string
+          example: 'authorization_code'
+        redirect_uri:
+          description: 'URI, который ранее указывался в запросе /oauth/authorize с целью проверки на сервере авторизации'
+          type: string
+          example: 'http://my-bank.ru/ouath/callback'
+        client_id:
+          description: 'Уникальный идентификатор приложения'
+          type: string
+          example: 'myBank'
+        code_verifier:
+          description: 'Оригинальный проверочный код (PKCE).'
+          type: string
+          example: 'dfhfd67dgdggFGD5'
+    AccessTokenResponse:
+      type: object
+      description: 'Ответ с токеном доступа'
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          description: 'Токен доступа, который приложение может использовать для доступа к ресурсам пользователя.'
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        token_type:
+          description: 'Тип токена.'
+          type: string
+          example: 'Bearer'
+        expires_in:
+          description: 'Срок действия токена в секундах.'
+          type: integer
+          example: 3600
+    jwk:
+      type: object
+      properties:
+        kid:
+          type: string
+          example: "bacb9098-51ff-4163-9574-829aa0af3f0f"
+          description: "Уникальный идентификатор ключа"
+        kty:
+          type: string
+          example: "RSA"
+          description: "Тип ключа (например, RSA)"
+        use:
+          type: string
+          example: "sig"
+          description: "Назначение ключа (например, sig для подписи)"
+        alg:
+          type: string
+          example: "RS256"
+          description: "Алгоритм шифрования"
+        n:
+          type: string
+          example: "3yYTW-HE9ouAePYxDGezssYfs3xvMtT-YsJ2TLxIae2rHhkU62sBE_cGctX4NuMm0"
+          description: "Модуль ключа"
+        e:
+          type: string
+          example: "AQAB"
+          description: "Показатель открытой экспоненты"
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+      properties:
+        timestamp:
+          type: string
+          description: 'Время ошибки'
+          example: '2023-12-05T10:26:49.779+00:00'
+        status:
+          type: integer
+          description: 'Числовой код ошибочного ответа'
+          format: int32
+          example: 403
+        error:
+          type: string
+          maxLength: 200
+          description: 'Краткое, понятное человеку, описание проблемы'
+          example: 'Forbidden'
+        details:
+          type: string
+          maxLength: 2000
+          description: 'Подробное, понятное человеку, описание проблемы'
+          example: 'Доступ к запрошенному ресурсу запрещен'
+        causes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorCause'
+    ErrorCause:
+      type: object
+      description: 'Описание причины ошибки'
+      properties:
+        error:
+          type: string
+          maxLength: 200
+          description: 'Краткое, понятное человеку, описание'
+          example: 'Неверный формат'
+        field:
+          type: string
+          maxLength: 200
+          description: 'Ошибочное поле'
+          example: 'Authorization'

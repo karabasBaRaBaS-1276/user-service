@@ -83,8 +83,6 @@ func findConfigByEnv(env string) string {
 	possiblePaths := []string{
 		filepath.Join("config", env+".yaml"),
 		filepath.Join("config", env+".yml"),
-		filepath.Join("config", env+".json"),
-		filepath.Join("configs", env+".yaml"),
 		env + ".yaml",
 	}
 

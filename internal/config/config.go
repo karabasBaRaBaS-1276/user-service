@@ -3,9 +3,7 @@ package config
 import (
 	"embed"
 	"fmt"
-	"log"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -138,6 +136,9 @@ func Load(configPath string, env string) (*Config, error) {
 }
 
 // loadDefaultConfig загружает встроенную конфигурацию по умолчанию
+// NOTE:
+// default config is embedded at compile time.
+// ReadFile / Unmarshal errors are unreachable in a valid build.
 func loadDefaultConfig(cfg *Config) error {
 	data, err := defaultConfigFS.ReadFile(defaultConfigPath)
 	if err != nil {
@@ -168,7 +169,7 @@ func loadYAMLWithEnv(cfg *Config, configPath string) error {
 				return val // возвращаем значение env
 			}
 			if defaultValue == "" {
-				log.Printf("WARN: Environment variable %s is not set and no default", envKey)
+				panic(fmt.Sprintf("Environment variable %s is not set and no default", envKey))
 			}
 			return defaultValue
 		}
@@ -180,42 +181,4 @@ func loadYAMLWithEnv(cfg *Config, configPath string) error {
 	})
 
 	return yaml.Unmarshal([]byte(expanded), cfg)
-}
-
-// Загрузка строковых переменных окружения
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// Загрузка целочисленных переменных окружения
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-// Загрузка булевых переменных окружения
-func getEnvAsBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolValue, err := strconv.ParseBool(value); err == nil {
-			return boolValue
-		}
-	}
-	return defaultValue
-}
-
-// Загрузка переменных окружения с отрезками времени
-func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
 }

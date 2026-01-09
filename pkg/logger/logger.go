@@ -105,11 +105,11 @@ func (ml *MiddlewareLogger) WithRequest(r *http.Request) *zap.Logger {
 	fields := []zap.Field{
 		zap.String("service_id", ml.ServiceName),
 		zap.String("service_version", ml.serviceVersion),
-		zap.String("http.method", r.Method),
-		zap.String("http.path", r.URL.Path),
-		zap.String("http.user_agent", r.UserAgent()),
-		zap.String("http.referer", r.Referer()),
-		zap.String("source.ip", r.RemoteAddr),
+		zap.String("http_method", r.Method),
+		zap.String("http_path", r.URL.Path),
+		zap.String("http_user_agent", r.UserAgent()),
+		zap.String("http_referer", r.Referer()),
+		zap.String("source_ip", r.RemoteAddr),
 	}
 
 	// Добавляем request_id если есть
@@ -207,14 +207,15 @@ func createCores(cfg Config, encoderConfig zapcore.EncoderConfig, level zapcore.
 
 // getConsoleEncoder возвращает кодировщик для консоли
 func getConsoleEncoder(cfg Config, baseConfig zapcore.EncoderConfig) zapcore.Encoder {
-	if cfg.EnableJSON {
-		// Если включен принудительный JSON, используем его даже в консоли
-		return zapcore.NewJSONEncoder(baseConfig)
-	}
 
 	if cfg.Environment == "development" {
 		// Для development - читаемый формат
 		return zapcore.NewConsoleEncoder(baseConfig)
+	}
+
+	if cfg.EnableJSON {
+		// Если включен принудительный JSON и это не develop, то используем его даже в консоли
+		return zapcore.NewJSONEncoder(baseConfig)
 	}
 
 	// Для production в консоли тоже можно использовать JSON

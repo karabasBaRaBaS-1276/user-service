@@ -14,19 +14,20 @@ server:
 database:
   host: "localhost"
   port: "5432"
-  user: "postgres"
-  password: "postgres"
-  name: "user_service"
+  user: "go_user_service"
+  password: "go_user_service"
+  name: "my_bank"         # Имя БД
+  schema: "user_service"  # Имя схемы в БД
   ssl_mode: "disable"
 
 # Конфигурация для логирования
 logging:
   level: "debug"
-  file_path: "/var/log/service.json"
+  file_path: "./var/log/service.json"
   max_size_mb: 10
   max_backups: 7
   max_age_days: 5
-  enable_json: false
+  enable_json: true
 
 # Конфигурация модуля авторизации
 auth:

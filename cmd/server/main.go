@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/karabasBaRaBaS-1276/user-service/internal/app"
 	"github.com/karabasBaRaBaS-1276/user-service/internal/config"
 	"github.com/karabasBaRaBaS-1276/user-service/pkg/logger"
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ var (
 	configPath  = flag.String("config", "", "Path to config file (default: use embedded config)")
 	showVersion = flag.Bool("version", false, "Show version and exit")
 	env         = flag.String("env", "", "Environment (development, production, staging)")
+	onlyInitApp = flag.Bool("init-app", false, "Show version and exit")
 )
 
 func main() {
@@ -57,22 +59,35 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to init logger: %v", err)
 	}
+	defer func() { // Чтобы логи не терялись при остановке приложения
+		_ = logger.Sync()
+	}()
 
+	logger.Info(">>>> Запуск <<<<<")
 	// todo. Убрать, чтобы не показывать секреты
 	logger.Debug("Конфигурация запуска",
 		zap.Any("config_summary", cfg),
 	)
 
 	// Создание и запуск приложения
+	application, err := app.New(cfg, logger)
+	if err != nil {
+		logger.Sugar().Fatalf("Ошибка при создании приложения: %v", err)
+	}
+	logger.Debug("Конфигурация приложения",
+		zap.Any("application", application),
+	)
+	if *onlyInitApp {
+		logger.Info("Флаг запуска приложения `init-app = true`. Дальнейший запуск прерван")
+		os.Exit(0)
+	}
 	/*
-		application, err := app.New(cfg, logger)
-		if err != nil {
-			logger.Fatal("Failed to create app", err)
-		}
-
 		if err := application.Run(); err != nil {
-			logger.Error("Application error", err)
+			logger.Fatal("Ошибка при запуске приложения",
+				zap.Error(err),
+			)
 		}
+		logger.Info(">>>> Успешно <<<<<")
 	*/
 
 }

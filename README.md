@@ -124,9 +124,10 @@ API, структура пакетов и внутренняя реализац�
 ## Флаги запуска
 Поддерживаются следующие флаги запуска:
 
-* `--config` - Путь до файла конфигурации, переопределющий умолчания
+* `--config` - Путь до файла конфигурации, переопределяющий умолчания
 * `--version` - Показать информацию о сбоке и выйти
 * `--env` - Окружение (development, production, staging)
+* `--init-app` - Инициировать приложение и выйти
 
 Примеры:
 
@@ -134,4 +135,10 @@ API, структура пакетов и внутренняя реализац�
 go run cmd/server/main.go --env production
 go run cmd/server/main.go --config config/production.yaml
 go run cmd/server/main.go --version true
+go run cmd/server/main.go --init-app true
+// Интеграционные тесты
+go test -tags=integration ./internal/app
+// Переопределение переменных из команды запуска
+DB_PASSWORD=go_user_service JWT_SECRET=test go run cmd/server/main.go --config config/production.yaml
 ```
+Если в вашей БД SHOW lc_messages; возвращает не Russian_Russia.utf8, то это может быть проблемой при отображении ошибок от БД, связанные с кодировкой. Стоит внести изменения в файл по пути, который возвращается по команде SHOW config_file;

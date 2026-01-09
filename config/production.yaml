@@ -13,15 +13,15 @@ server:
 database:
   host: "${DB_HOST:-localhost}"
   port: "5432"
-  user: "postgres"
+  user: "go_user_service"
   password: "${DB_PASSWORD}"
-  name: "user_service"
+  name: "my_bank"
   ssl_mode: "disable"
 
 # Конфигурация для логирования
 logging:
   level: "info"
-  file_path: "/var/log/service.json"
+  file_path: "./var/log/service.json"
   max_size_mb: 10
   max_backups: 7
   max_age_days: 5

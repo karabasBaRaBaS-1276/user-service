@@ -179,3 +179,17 @@ DB_PASSWORD=go_user_service JWT_SECRET=test go run cmd/server/main.go --config c
 ```bash
 go test -tags=integration ./internal/app
 ```
+
+## CI
+
+Проект использует GitHub Actions для:
+- сборки приложения,
+- статического анализа кода,
+- запуска unit и integration тестов.
+
+Pipeline автоматически запускается:
+- при каждом push в ветку `trunk`,
+- при открытии pull request в `trunk`.
+
+Для integration-тестов используется PostgreSQL,
+запускаемый как service container в GitHub Actions.

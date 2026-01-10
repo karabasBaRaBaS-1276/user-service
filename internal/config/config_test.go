@@ -142,6 +142,7 @@ auth:
 }
 
 func TestLoad_PanicNotDefaultEnv(t *testing.T) {
+	t.Setenv("DB_PASSWORD", "")
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config")
 
@@ -160,6 +161,8 @@ database:
 }
 
 func TestLoad_PanicNotEnv(t *testing.T) {
+	// Явно затираем переменную для этого теста
+	t.Setenv("DB_PASSWORD", "")
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config")
 

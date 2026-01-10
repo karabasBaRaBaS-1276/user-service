@@ -43,7 +43,7 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.NotZero(t, cfg.Logging.MaxAgeDays)
 	assert.NotEmpty(t, cfg.Logging.ServiceName)
 	assert.NotEmpty(t, cfg.Logging.ServiceVersion)
-	assert.False(t, cfg.Logging.EnableJSON)
+	assert.True(t, cfg.Logging.EnableJSON)
 	assert.False(t, cfg.Logging.DisableConsole)
 	// авторизация
 	assert.NotEmpty(t, cfg.Auth.JWTSecret)

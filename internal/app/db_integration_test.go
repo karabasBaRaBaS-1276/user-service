@@ -102,9 +102,6 @@ func waitForDB(
 
 	var lastErr error
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
 	for i := 0; i < 10; i++ {
 		db, err := initDB(cfg, logger)
 		if err == nil {
@@ -112,7 +109,12 @@ func waitForDB(
 		}
 
 		lastErr = err
-		time.Sleep(1 * time.Second)
+
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("database not ready: %w", ctx.Err())
+		case <-time.After(1 * time.Second):
+		}
 	}
 
 	return nil, fmt.Errorf("database not ready: %w", lastErr)
@@ -138,6 +140,13 @@ func cleanDatabase(t *testing.T) {
 		END $$;
 	`)
 	require.NoError(t, err)
+}
+
+func TestSomething(t *testing.T) {
+	cleanDatabase(t)
+	t.Cleanup(func() { cleanDatabase(t) })
+
+	// тест
 }
 
 // Проверяем, что initDB корректно инициализировал соединение.

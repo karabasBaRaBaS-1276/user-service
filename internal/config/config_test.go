@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoad_Defaults(t *testing.T) {
@@ -150,12 +151,11 @@ database:
 `)
 
 	err := os.WriteFile(configPath+"test03.yaml", content, 0644)
-	if err != nil {
-		t.Fatalf("failed to write config file: %v", err)
-	}
+	require.NoError(t, err)
 
 	assert.Panics(t, func() {
-		Load(configPath+"test03.yaml", "")
+		_, err := Load(configPath+"test03.yaml", "")
+		_ = err // unreachable, но явно фиксируем намерение
 	})
 }
 
@@ -169,12 +169,11 @@ database:
 `)
 
 	err := os.WriteFile(configPath+"test04.yaml", content, 0644)
-	if err != nil {
-		t.Fatalf("failed to write config file: %v", err)
-	}
+	require.NoError(t, err)
 
 	assert.Panics(t, func() {
-		Load(configPath+"test04.yaml", "")
+		_, err := Load(configPath+"test04.yaml", "")
+		_ = err // unreachable, но явно фиксируем намерение
 	})
 }
 

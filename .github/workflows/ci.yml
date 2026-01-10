@@ -57,5 +57,8 @@ jobs:
         with:
           version: latest
 
-      - name: Run tests
+      - name: Run Unit tests
         run: go test -v ./...
+        
+      - name: Run Integration tests
+        run: go test -v -tags=integration ./...

@@ -10,29 +10,6 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        options: >-
-          --health-cmd="pg_isready -U test"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: test
-      DB_PASSWORD: test
-      DB_NAME: test
-      DB_SSL_MODE: disable
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -57,8 +34,5 @@ jobs:
         with:
           version: latest
 
-      - name: Run Unit tests
-        run: go test -v ./...
-        
-      - name: Run Integration tests
+      - name: Run all tests
         run: go test -v -tags=integration ./...

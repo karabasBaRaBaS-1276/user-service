@@ -133,6 +133,7 @@ API, структура пакетов и внутренняя реализац�
 Подробности см. в [docs/database.md](docs/database.md).
 
 ## Флаги запуска
+
 Поддерживаются следующие флаги запуска:
 
 * `--config` - Путь до файла конфигурации, переопределяющий умолчания
@@ -157,9 +158,9 @@ DB_PASSWORD=go_user_service JWT_SECRET=test go run cmd/server/main.go --config c
 
 ### Что проверяется
 
-- Поднятие и доступность PostgreSQL контейнера  
-- Корректная инициалиация соединения (`initDB`)  
-- Smoke-проверка `Ping` к базе данных
+* Поднятие и доступность PostgreSQL контейнера  
+* Корректная инициалиация соединения (`initDB`)  
+* Smoke-проверка `Ping` к базе данных
 
 Эти тесты не являются unit-тестами и требуют запуска Docker на вашей машине или в CI-окружении.
 
@@ -185,13 +186,15 @@ go test -tags=integration ./internal/app
 ## CI
 
 Проект использует GitHub Actions для:
-- сборки приложения,
-- статического анализа кода,
-- запуска unit и integration тестов.
+
+* сборки приложения,
+* статического анализа кода,
+* запуска unit и integration тестов.
 
 Pipeline автоматически запускается:
-- при каждом push в ветку `trunk`,
-- при открытии pull request в `trunk`.
+
+* при каждом push в ветку `trunk`,
+* при открытии pull request в `trunk`.
 
 Для integration-тестов используется PostgreSQL,
 запускаемый как service container в GitHub Actions.
@@ -199,23 +202,27 @@ Pipeline автоматически запускается:
 
 Локальная проверка линтером:
 Установка версии
+
 ```bash
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 ```
 
 Запуск проверки:
-```
+
+```bash
 golangci-lint run
 ```
 
 Перед коммитом:
-```
+
+```bash
 go test ./...
 golangci-lint run
 ```
 
 Перед PR (или когда трогал integration-код):
-```
+
+```bash
 golangci-lint run --build-tags=integration
 go test -tags=integration ./...
 ```

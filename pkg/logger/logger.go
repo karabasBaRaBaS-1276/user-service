@@ -117,7 +117,7 @@ func (ml *MiddlewareLogger) WithRequest(r *http.Request) *zap.Logger {
 		fields = append(fields, zap.String("request_id", requestID))
 	}
 
-	return ml.Logger.With(fields...)
+	return ml.With(fields...)
 }
 
 // getLogLevel парсит строку в zapcore.Level

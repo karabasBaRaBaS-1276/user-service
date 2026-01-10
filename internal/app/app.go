@@ -86,7 +86,7 @@ func (a *App) Run(ctx context.Context) error {
 		return a.shutdown()
 
 	case err := <-errCh:
-		return fmt.Errorf("Ошибка http сервера: %w", err)
+		return fmt.Errorf("ошибка http сервера: %w", err)
 	}
 }
 
@@ -105,7 +105,7 @@ func (a *App) shutdown() error {
 	)
 
 	if err := a.httpServer.Shutdown(ctx); err != nil {
-		return fmt.Errorf("Ошибка выключения http сервера: %w", err)
+		return fmt.Errorf("ошибка выключения http сервера: %w", err)
 	}
 
 	a.logger.Info("Приложение безопасно остановлено")

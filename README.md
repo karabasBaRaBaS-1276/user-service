@@ -1,5 +1,7 @@
 # user-service
 
+[![CI Status](https://github.com/karabasBaRaBaS-1276/user-service/actions/workflows/ci.yml/badge.svg)](https://github.com/karabasBaRaBaS-1276/user-service/actions/workflows/ci.yml)
+
 ## Описание
 
 `user-service` — бэкенд‑сервис управления пользователями и их аутентификацией, реализованный на Go.

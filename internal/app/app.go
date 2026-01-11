@@ -41,14 +41,12 @@ func (a *App) init() error {
 	}
 	a.db = db
 
-	/*
-		// 2. Миграции
-		if a.cfg.DB.Migrate {
-			if err := runMigrations(a.cfg); err != nil {
-				return err
-			}
-		}
+	// 2. Миграции
+	if err := runMigrations(db, "file://migrations", a.logger); err != nil {
+		return err
+	}
 
+	/*
 		// 3. Репозитории
 		repos := initRepositories(db)
 
@@ -86,7 +84,7 @@ func (a *App) Run(ctx context.Context) error {
 		return a.shutdown()
 
 	case err := <-errCh:
-		return fmt.Errorf("ошибка http сервера: %w", err)
+		return fmt.Errorf("http server startup: %w", err)
 	}
 }
 
@@ -105,7 +103,7 @@ func (a *App) shutdown() error {
 	)
 
 	if err := a.httpServer.Shutdown(ctx); err != nil {
-		return fmt.Errorf("ошибка выключения http сервера: %w", err)
+		return fmt.Errorf("http server shutdown: %w", err)
 	}
 
 	a.logger.Info("Приложение безопасно остановлено")

@@ -46,12 +46,38 @@ func initDB(cfg *config.Config, logger *zap.Logger) (*sql.DB, error) {
 	}
 	logger.Info("Соединение с базой данных успешно установлено")
 
+	// --- Работа со схемой
+	schema := cfg.Database.Schema
+	if schema == "" {
+		return nil, fmt.Errorf("database schema is empty")
+	}
+
+	// CREATE SCHEMA
+	createSchemaQuery := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema)
+
+	logger.Sugar().Infof("Проверка / создание схемы: '%s'", createSchemaQuery)
+	if _, err := db.Exec(createSchemaQuery); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("create schema %s: %w", schema, err)
+	}
+
+	// SET search_path
+	setSearchPathQuery := fmt.Sprintf("SET search_path TO %s", schema)
+	logger.Sugar().Infof("Установка search_path по умолчанию: %s", setSearchPathQuery)
+
+	if _, err := db.Exec(setSearchPathQuery); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("set search_path to %s: %w", schema, err)
+	}
+
+	logger.Info("Схема базы данных успешно подготовлена для работы")
+
 	return db, nil
 }
 
 func buildPostgresDSN(cfg config.DatabaseConfig) (string, error) {
 	if cfg.Host == "" || cfg.Port == "" || cfg.User == "" || cfg.Name == "" {
-		return "", fmt.Errorf("неполная конфигурация базы данных")
+		return "", fmt.Errorf("incomplete database configuration")
 	}
 
 	var user *url.Userinfo

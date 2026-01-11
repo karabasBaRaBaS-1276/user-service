@@ -74,18 +74,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Пока нет миграции, создание схемы для тестов
-	_, err = testDB.Exec(`CREATE SCHEMA IF NOT EXISTS ` + dbSchema)
-	if err != nil {
-		panic(err)
-	}
-
-	// Пока нет миграции, явно фиксируем search_path для текущего соединения
-	_, err = testDB.Exec(`SET search_path TO ` + dbSchema)
-	if err != nil {
-		panic(err)
-	}
-
 	code := m.Run()
 
 	_ = testDB.Close()

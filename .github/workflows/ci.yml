@@ -32,7 +32,8 @@ jobs:
       - name: GolangCI-Lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.8.0
+          args: --timeout=5m --build-tags=integration ./...
 
       - name: Run all tests
         run: go test -v -count=1 -tags=integration ./...

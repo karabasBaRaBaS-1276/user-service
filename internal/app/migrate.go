@@ -21,10 +21,10 @@ func runMigrations(db *sql.DB, migrationsPath string, logger *zap.Logger) error 
 
 	// Текущая версия до применения
 	version, dirty, err := m.Version()
-	switch {
-	case err == nil:
+	switch err {
+	case nil:
 		logger.Sugar().Infof("Информация о миграции: version = %d, dirty = %t", version, dirty)
-	case err == migrate.ErrNilVersion:
+	case migrate.ErrNilVersion:
 		logger.Info("Информация о миграции: нет информации о миграций")
 	default:
 		return fmt.Errorf("get migration version: %w", err)

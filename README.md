@@ -168,30 +168,19 @@ Pipeline автоматически запускается:
 Для integration-тестов используется PostgreSQL,
 запускаемый как service container в GitHub Actions.
 
-
 Локальная проверка линтером:
 Установка версии
 
 ```bash
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
 ```
 
 Запуск проверки:
 
-```bash
-golangci-lint run
-```
-
-Перед коммитом:
 
 ```bash
 go test -v -count=1 ./...
 golangci-lint run
-```
-
-Перед PR (или когда трогал integration-код):
-
-```bash
 golangci-lint run --build-tags=integration
 go test -v -count=1 -tags=integration ./...
 ```

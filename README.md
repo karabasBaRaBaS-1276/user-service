@@ -43,7 +43,7 @@
 
 Высокоуровневая структура:
 
-```
+```text
 user-service/
   ├── api/                    // OpenAPI контракт (временный)
   ├── cmd/
@@ -179,8 +179,8 @@ go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
 
 
 ```bash
-go test -v -count=1 ./...
 golangci-lint run
 golangci-lint run --build-tags=integration
+go test -v -count=1 ./...
 go test -v -count=1 -tags=integration ./...
 ```

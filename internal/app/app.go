@@ -16,6 +16,7 @@ type App struct {
 	logger     *zap.Logger
 	httpServer *http.Server
 	db         *sql.DB
+	repos      *Repositories
 }
 
 // Конструктор приложения с необходимыми для его работы ресурсами
@@ -45,11 +46,10 @@ func (a *App) init() error {
 	if err := runMigrations(db, "file://migrations", a.logger); err != nil {
 		return err
 	}
+	// 3. Репозитории
+	a.repos = initRepositories(db)
 
 	/*
-		// 3. Репозитории
-		repos := initRepositories(db)
-
 		// 4. Сервисы
 		services := initServices(repos)
 

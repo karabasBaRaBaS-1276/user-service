@@ -11,12 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// App отвечает за инициализацию и жизненный цикл приложения.
+// Здесь происходит сборка инфраструктуры и связывание компонентов.
 type App struct {
 	cfg        *config.Config
 	logger     *zap.Logger
 	httpServer *http.Server
 	db         *sql.DB
-	repos      *Repositories
 }
 
 // Конструктор приложения с необходимыми для его работы ресурсами
@@ -47,15 +48,14 @@ func (a *App) init() error {
 		return err
 	}
 	// 3. Репозитории
-	a.repos = initRepositories(db)
+	repos := initRepositories(db)
 
-	/*
-		// 4. Сервисы
-		services := initServices(repos)
+	// 4. Сервисы
+	services := initServices(repos)
 
-		// 5. HTTP сервер
-		a.httpServer = initHTTPServer(a.cfg, a.logger, services)
-	*/
+	// 5. HTTP сервер
+	a.httpServer = initHTTPServer(a.cfg, a.logger, services)
+
 	return nil
 }
 

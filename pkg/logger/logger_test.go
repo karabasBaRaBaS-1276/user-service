@@ -227,27 +227,37 @@ func TestLoggerWithRequestID(t *testing.T) {
 	})
 }
 
-func TestMiddlewareLogger_WithRequest(t *testing.T) {
-	core, observed := observer.New(zapcore.InfoLevel)
-	logger := zap.New(core)
-
+func TestWithRequest(t *testing.T) {
+	// 1. Создаем логгер с базовыми сервисными полями (имитируем работу функции New)
 	serviceName := "my-service"
 	serviceVersion := "1.2.3"
-	ml := NewMiddlewareLogger(logger, serviceName, serviceVersion)
 
+	core, observed := observer.New(zapcore.InfoLevel)
+	// Добавляем поля так же, как это делает функция New
+	logger := zap.New(core, zap.Fields(
+		zap.String("service_id", serviceName),
+		zap.String("service_version", serviceVersion),
+	))
+
+	// 2. Готовим запрос
 	req, _ := http.NewRequest("GET", "/test-path", nil)
 	req.Header.Set("X-Request-ID", "req-777")
 	req.Header.Set("User-Agent", "Go-Test")
 	req.RemoteAddr = "127.0.0.1:1234"
 
-	l := ml.WithRequest(req)
+	// 3. Вызываем обновленную функцию
+	l := WithRequest(logger, req)
 	l.Info("request logged")
 
+	// 4. Проверяем результат
 	require.Equal(t, 1, observed.Len())
 	fields := observed.All()[0].ContextMap()
 
+	// Проверяем, что базовые поля сохранились
 	assert.Equal(t, serviceName, fields["service_id"])
 	assert.Equal(t, serviceVersion, fields["service_version"])
+
+	// Проверяем, что новые поля добавились корректно
 	assert.Equal(t, "GET", fields["http_method"])
 	assert.Equal(t, "/test-path", fields["http_path"])
 	assert.Equal(t, "req-777", fields["request_id"])

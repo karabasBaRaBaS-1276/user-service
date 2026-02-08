@@ -17,7 +17,7 @@ const (
 	dbPingTimeout = 5 * time.Second
 )
 
-func initDB(cfg *config.Config, logger *zap.Logger) (*sql.DB, error) {
+func initDB(ctx context.Context, cfg *config.Config, logger *zap.Logger) (*sql.DB, error) {
 	logger.Info("Инициализация подключения в базе данных")
 
 	dsn, err := buildPostgresDSN(cfg.Database)
@@ -37,10 +37,10 @@ func initDB(cfg *config.Config, logger *zap.Logger) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), dbPingTimeout)
+	pingCtx, cancel := context.WithTimeout(ctx, dbPingTimeout)
 	defer cancel()
 
-	if err := db.PingContext(ctx); err != nil {
+	if err := db.PingContext(pingCtx); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("ping database: %s", err)
 	}

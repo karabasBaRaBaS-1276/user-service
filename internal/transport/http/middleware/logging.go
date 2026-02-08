@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	logger "github.com/karabasBaRaBaS-1276/user-service/pkg/logger"
+	"github.com/karabasBaRaBaS-1276/user-service/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -22,13 +22,13 @@ func FromContext(ctx context.Context) *zap.Logger {
 }
 
 // Logging middleware логирует HTTP-запросы
-func Logging(ml *logger.MiddlewareLogger) Middleware {
+func Logging(l *zap.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
 			// request-scoped логгер с HTTP-полями
-			reqLogger := ml.WithRequest(r)
+			reqLogger := logger.WithRequest(l, r)
 
 			ctx := context.WithValue(r.Context(), loggerKey, reqLogger)
 

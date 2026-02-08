@@ -10,14 +10,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func Recover(ml *logger.MiddlewareLogger) Middleware {
+func Recover(l *zap.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rec := recover(); rec != nil {
-					log := ml.WithRequest(r)
+					// Используем нашу новую функцию для обогащения лога данными запроса
+					reqLogger := logger.WithRequest(l, r)
 
-					log.Error(
+					reqLogger.Error(
 						"panic recovered",
 						zap.Any("panic", rec),
 						zap.ByteString("stacktrace", debug.Stack()),

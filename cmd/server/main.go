@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/karabasBaRaBaS-1276/user-service/internal/app"
 	"github.com/karabasBaRaBaS-1276/user-service/internal/config"
@@ -25,6 +28,23 @@ var (
 	onlyInitApp = flag.Bool("init-app", false, "Show version and exit")
 )
 
+// @title           API с Actuator-эндпоинтами
+// @version         1.0
+// @description     Инфраструктурный слой (Actuator) — Code-First с Actuator-эндпоинтами.
+
+// @tag.name        Actuator
+// @tag.description Эндпоинты для мониторинга состояния приложения, сбора метрик и доступа к информации о среде
+
+// @termsOfService  https://github.com/karabasBaRaBaS-1276/user-service
+
+// @contact.name   API Support
+// @contact.url    https://github.com/karabasBaRaBaS-1276/user-service
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8090
+// @BasePath  /actuator
 func main() {
 	// Флаги запуска приложения
 	flag.Parse()
@@ -69,8 +89,16 @@ func main() {
 		zap.Any("config_summary", cfg),
 	)
 
+	// Создаем root context
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
 	// Создание и запуск приложения
-	application, err := app.New(cfg, logger)
+	application, err := app.New(ctx, cfg, logger)
 	if err != nil {
 		logger.Sugar().Fatalf("Ошибка при создании приложения: %v", err)
 	}
@@ -79,16 +107,15 @@ func main() {
 	)
 	if *onlyInitApp {
 		logger.Info("Флаг запуска приложения `init-app = true`. Дальнейший запуск прерван")
-		os.Exit(0)
+		return
 	}
-	/*
-		if err := application.Run(); err != nil {
-			logger.Fatal("Ошибка при запуске приложения",
-				zap.Error(err),
-			)
-		}
-		logger.Info(">>>> Успешно <<<<<")
-	*/
+
+	if err := application.Run(ctx); err != nil {
+		logger.Fatal("Ошибка при запуске приложения",
+			zap.Error(err),
+		)
+	}
+	logger.Info(">>>> Успешно <<<<<")
 
 }
 

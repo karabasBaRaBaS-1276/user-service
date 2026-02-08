@@ -1,15 +1,16 @@
 package http
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/karabasBaRaBaS-1276/user-service/internal/config"
 	"go.uber.org/zap"
 )
 
-func NewServer(cfg *config.Config, logger *zap.Logger, deps Deps) *http.Server {
+func NewServer(ctx context.Context, cfg *config.Config, logger *zap.Logger, deps Deps) *http.Server {
 
-	handler := NewRouter(logger, deps, cfg.ServiceName, cfg.Logging.ServiceVersion)
+	handler := NewRouter(ctx, logger, deps, cfg.ServiceName, cfg.Logging.ServiceVersion)
 
 	return &http.Server{
 		Addr:         ":" + cfg.Server.Port,

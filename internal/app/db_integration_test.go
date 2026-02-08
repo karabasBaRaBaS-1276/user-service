@@ -91,7 +91,7 @@ func waitForDB(
 	var lastErr error
 
 	for i := 0; i < 10; i++ {
-		db, err := initDB(cfg, logger)
+		db, err := initDB(ctx, cfg, logger)
 		if err == nil {
 			return db, nil
 		}

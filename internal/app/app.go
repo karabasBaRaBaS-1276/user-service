@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -21,13 +22,13 @@ type App struct {
 }
 
 // Конструктор приложения с необходимыми для его работы ресурсами
-func New(cfg *config.Config, log *zap.Logger) (*App, error) {
+func New(ctx context.Context, cfg *config.Config, log *zap.Logger) (*App, error) {
 	app := &App{
 		cfg:    cfg,
 		logger: log,
 	}
 
-	if err := app.init(); err != nil {
+	if err := app.init(ctx); err != nil {
 		return nil, fmt.Errorf("init app: %w", err)
 	}
 
@@ -35,9 +36,9 @@ func New(cfg *config.Config, log *zap.Logger) (*App, error) {
 }
 
 // Инициализация приложения
-func (a *App) init() error {
+func (a *App) init(ctx context.Context) error {
 	// 1. База данных
-	db, err := initDB(a.cfg, a.logger)
+	db, err := initDB(ctx, a.cfg, a.logger)
 	if err != nil {
 		return err
 	}
@@ -54,48 +55,48 @@ func (a *App) init() error {
 	services := initServices(repos)
 
 	// 5. HTTP сервер
-	a.httpServer = initHTTPServer(a.cfg, a.logger, services)
+	a.httpServer = initHTTPServer(ctx, a.cfg, a.logger, services, db)
 
 	return nil
 }
 
 // Запуск приложения
 func (a *App) Run(ctx context.Context) error {
-	a.logger.Info("Запуск приложения",
-		zap.String("service", a.cfg.ServiceName),
-		zap.String("environment", a.cfg.Environment),
-	)
 
-	errCh := make(chan error, 1)
+	if a.httpServer == nil {
+		return errors.New("http server is not initialized")
+	}
+
+	logger := a.logger
+
+	serverErr := make(chan error, 1)
 
 	go func() {
-		a.logger.Info("Запущен http server",
-			zap.String("addr", a.httpServer.Addr),
-		)
+		logger.Sugar().Infof("Запуск приложения по адресу: %s", a.httpServer.Addr)
 
 		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
+			serverErr <- err
 		}
 	}()
 
 	select {
 	case <-ctx.Done():
-		a.logger.Info("Получен сигнал на выключение приложения")
-		return a.shutdown()
+		logger.Info("Контекст завершён, начинаем graceful shutdown")
+		return a.shutdown(ctx)
 
-	case err := <-errCh:
+	case err := <-serverErr:
 		return fmt.Errorf("http server startup: %w", err)
 	}
 }
 
 // Остановка приложения
-func (a *App) shutdown() error {
+func (a *App) shutdown(parentCtx context.Context) error {
 	timeout := a.cfg.Server.ShutdownTimeout
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(parentCtx, timeout)
 	defer cancel()
 
 	a.logger.Info("Выключение http сервера",
@@ -104,6 +105,13 @@ func (a *App) shutdown() error {
 
 	if err := a.httpServer.Shutdown(ctx); err != nil {
 		return fmt.Errorf("http server shutdown: %w", err)
+	}
+
+	if a.db != nil {
+		a.logger.Info("Закрытие соединения с БД")
+		if err := a.db.Close(); err != nil {
+			a.logger.Warn("Ошибка при закрытии БД", zap.Error(err))
+		}
 	}
 
 	a.logger.Info("Приложение безопасно остановлено")

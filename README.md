@@ -49,7 +49,9 @@ user-service/
   ├── cmd/
   │   ├── server/             // основной HTTP сервер
   ├── config/                 // файлы конфигураций для разных окружений
-  ├── docs/                   // документация mkdocs
+  ├── docs/
+  │   ├── actuator/           // Сгенерированный Swagger для системных ручек
+  │   └── ...                 // Прочая документация (mkdocs)
   ├── internal/
   │   ├── app/                // сборка и запуск приложения
   │   ├── config/             // конфигурации
@@ -68,19 +70,23 @@ user-service/
 
 ---
 
-## API и OpenAPI
+## API и Документация
 
-В проекте используется OpenAPI для описания HTTP API.
+В проекте используется гибридный подход к документированию и разработке API:
 
-На текущем этапе:
+### 1. Инфраструктурный слой (Actuator) — Code-First
 
-* спецификация `api/openapi.yaml` поддерживается вручную;
-* файл используется как временный контракт.
+Для системных эндпоинтов (`/liveness`, `/readiness`, `/info`) документация генерируется автоматически из аннотаций в Go-коде с помощью **swaggo**.
 
-Планируемый переход:
+* **Источник истины:** Комментарии к хендлерам в `internal/transport/http/handler/actuator/`.
+* **Артефакт:** `docs/actuator/swagger.json`.
 
-* OpenAPI будет генерироваться автоматически из Go‑кода на основе аннотаций HTTP‑обработчиков;
-* ручная спецификация будет удалена после завершения миграции.
+### 2. Бизнес-логика (Person API) — API-First
+
+Для основных бизнес-интерфейсов используется подход "сначала контракт".
+
+* **Источник истины:** `api/openapi.yaml`.
+* **Реализация:** Кодогенерация интерфейсов и моделей (планируется использование `oapi-codegen`).
 
 ---
 
@@ -177,10 +183,20 @@ go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
 
 Запуск проверки:
 
-
 ```bash
 golangci-lint run
 golangci-lint run --build-tags=integration
-go test -v -count=1 ./...
-go test -v -count=1 -tags=integration ./...
+go test -v -count=1 ./... -cover
+go test -v -count=1 -tags=integration ./... -cover
+```
+
+## Генерация документации (Swagger)
+
+Для обновления документации Actuator необходимо наличие установленной утилиты `swag`:
+
+```bash
+go install [github.com/swaggo/swag/cmd/swag@latest](https://github.com/swaggo/swag/cmd/swag@latest)
+
+# Генерация OpenAPI 3.0 спецификации для Actuator
+swag init -g cmd/server/main.go -o docs/actuator --instanceName actuator --outputTypes go,yaml
 ```

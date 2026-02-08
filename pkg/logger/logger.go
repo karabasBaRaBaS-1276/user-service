@@ -23,13 +23,6 @@ type Config struct {
 	DisableConsole bool   // отключить вывод в консоль
 }
 
-// MiddlewareLogger структура для работы с логгером в middleware
-type MiddlewareLogger struct {
-	*zap.Logger
-	ServiceName    string
-	serviceVersion string
-}
-
 // New создает и настраивает новый экземпляр zap.Logger на основе конфигурации.
 // Функция возвращает настроенный логгер или ошибку в случае проблем.
 func New(cfg Config) (*zap.Logger, error) {
@@ -57,7 +50,7 @@ func New(cfg Config) (*zap.Logger, error) {
 	// Объединяем ядра
 	core := zapcore.NewTee(cores...)
 
-	// Добавляем сервисные поля ко всем логам
+	// Эти поля будут во ВСЕХ логах приложения
 	serviceFields := []zap.Field{
 		zap.String("service_id", cfg.ServiceName),
 		zap.String("service_version", cfg.ServiceVersion),
@@ -91,20 +84,9 @@ func LoggerWithRequestID(logger *zap.Logger, requestID string) *zap.Logger {
 	return logger.With(zap.String("request_id", requestID))
 }
 
-// NewMiddlewareLogger создает логгер для middleware
-func NewMiddlewareLogger(logger *zap.Logger, ServiceName, serviceVersion string) *MiddlewareLogger {
-	return &MiddlewareLogger{
-		Logger:         logger,
-		ServiceName:    ServiceName,
-		serviceVersion: serviceVersion,
-	}
-}
-
-// WithRequest создает логгер с полями HTTP запроса
-func (ml *MiddlewareLogger) WithRequest(r *http.Request) *zap.Logger {
+// WithRequest добавляет поля HTTP-запроса к существующему логгеру
+func WithRequest(logger *zap.Logger, r *http.Request) *zap.Logger {
 	fields := []zap.Field{
-		zap.String("service_id", ml.ServiceName),
-		zap.String("service_version", ml.serviceVersion),
 		zap.String("http_method", r.Method),
 		zap.String("http_path", r.URL.Path),
 		zap.String("http_user_agent", r.UserAgent()),
@@ -117,7 +99,7 @@ func (ml *MiddlewareLogger) WithRequest(r *http.Request) *zap.Logger {
 		fields = append(fields, zap.String("request_id", requestID))
 	}
 
-	return ml.With(fields...)
+	return logger.With(fields...)
 }
 
 // getLogLevel парсит строку в zapcore.Level

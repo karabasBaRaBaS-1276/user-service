@@ -9,6 +9,25 @@ definitions:
         example: "2026-02-09T15:04:05Z"
         type: string
     type: object
+  actuator.ReadinessCheck:
+    properties:
+      message:
+        example: connected
+        type: string
+      status:
+        example: UP
+        type: string
+    type: object
+  actuator.ReadinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          $ref: '#/definitions/actuator.ReadinessCheck'
+        type: object
+      status:
+        example: UP
+        type: string
+    type: object
 host: localhost:8090
 info:
   contact:
@@ -33,6 +52,24 @@ paths:
           schema:
             $ref: '#/definitions/actuator.LivenessResponse'
       summary: Проверка приложения на запуск
+      tags:
+      - Actuator
+  /health/readiness:
+    get:
+      description: Простая проверка работоспособности, чтобы узнать, готово ли приложение
+        принимать запросы на обработку
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/actuator.ReadinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/actuator.ReadinessResponse'
+      summary: Проверка приложения к приему трафика
       tags:
       - Actuator
 swagger: "2.0"

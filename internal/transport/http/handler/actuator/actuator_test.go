@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/karabasBaRaBaS-1276/user-service/internal/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -30,12 +32,27 @@ func (m *MockDB) Ping() error {
 func TestLiveness(t *testing.T) {
 	handler := Liveness()
 	req := httptest.NewRequest("GET", "/liveness", nil)
+
+	// Добавляем логгер в контекст, так как хендлер его ожидает
+	req = req.WithContext(context.WithValue(req.Context(), loggerKey, zap.NewNop()))
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)
 
+	// 1. Проверяем статус код
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Contains(t, rr.Body.String(), "UP")
+
+	// 2. Десериализуем ответ
+	var resp LivenessResponse
+	err := json.Unmarshal(rr.Body.Bytes(), &resp)
+
+	// 3. Проверяем данные
+	require.NoError(t, err, "Ответ должен быть валидным JSON")
+	assert.Equal(t, "UP", resp.Status)
+
+	// Проверяем, что таймштамп не пустой и парсится (RFC3339)
+	_, err = time.Parse(time.RFC3339, resp.Timestamp)
+	assert.NoError(t, err, "Timestamp должен соответствовать формату RFC3339")
 }
 
 func TestInfo(t *testing.T) {
@@ -73,23 +90,28 @@ func TestReadiness_Integration(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		db, mock, _ := sqlmock.New(sqlmock.MonitorPingsOption(true))
 
-		// Ожидаем пинг
 		mock.ExpectPing()
-		// Ожидаем запрос версии миграций
 		rows := sqlmock.NewRows([]string{"version", "dirty"}).AddRow(10, false)
 		mock.ExpectQuery("SELECT version, dirty FROM schema_migrations").WillReturnRows(rows)
 
 		handler := Readiness(db)
 		req := httptest.NewRequest("GET", "/readiness", nil)
-
 		req = req.WithContext(context.WithValue(req.Context(), loggerKey, zap.NewNop()))
 		rr := httptest.NewRecorder()
 
 		handler.ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Contains(t, rr.Body.String(), "UP")
-		assert.Contains(t, rr.Body.String(), "version: 10")
+
+		// Десериализуем ответ в структуру
+		var resp ReadinessResponse
+		err := json.Unmarshal(rr.Body.Bytes(), &resp)
+		require.NoError(t, err)
+
+		// Точные проверки полей
+		assert.Equal(t, "UP", resp.Status)
+		assert.Equal(t, "UP", resp.Checks["database"].Status)
+		assert.Contains(t, resp.Checks["database"].Message, "Версия: 10")
 	})
 
 	t.Run("database_down", func(t *testing.T) {
@@ -104,13 +126,20 @@ func TestReadiness_Integration(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusServiceUnavailable, rr.Code)
-		assert.Contains(t, rr.Body.String(), "DOWN")
+
+		var resp ReadinessResponse
+		err := json.Unmarshal(rr.Body.Bytes(), &resp)
+		require.NoError(t, err)
+
+		assert.Equal(t, "DOWN", resp.Status)
+		assert.Equal(t, "DOWN", resp.Checks["database"].Status)
+		assert.Contains(t, resp.Checks["database"].Message, "db error")
 	})
 
 	t.Run("dirty_migration", func(t *testing.T) {
 		db, mock, _ := sqlmock.New(sqlmock.MonitorPingsOption(true))
 		mock.ExpectPing()
-		rows := sqlmock.NewRows([]string{"version", "dirty"}).AddRow(10, true) // DIRTY = true
+		rows := sqlmock.NewRows([]string{"version", "dirty"}).AddRow(10, true)
 		mock.ExpectQuery("SELECT version, dirty FROM schema_migrations").WillReturnRows(rows)
 
 		handler := Readiness(db)
@@ -121,6 +150,12 @@ func TestReadiness_Integration(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusServiceUnavailable, rr.Code)
-		assert.Contains(t, rr.Body.String(), "dirty")
+
+		var resp ReadinessResponse
+		err := json.Unmarshal(rr.Body.Bytes(), &resp)
+		require.NoError(t, err)
+
+		assert.Equal(t, "DOWN", resp.Status)
+		assert.Contains(t, resp.Checks["database"].Message, "dirty")
 	})
 }

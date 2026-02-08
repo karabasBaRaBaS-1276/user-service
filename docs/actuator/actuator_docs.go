@@ -42,6 +42,32 @@ const docTemplateactuator = `{
                     }
                 }
             }
+        },
+        "/health/readiness": {
+            "get": {
+                "description": "Простая проверка работоспособности, чтобы узнать, готово ли приложение принимать запросы на обработку",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Actuator"
+                ],
+                "summary": "Проверка приложения к приему трафика",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/actuator.ReadinessResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/actuator.ReadinessResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -55,6 +81,34 @@ const docTemplateactuator = `{
                 "timestamp": {
                     "type": "string",
                     "example": "2026-02-09T15:04:05Z"
+                }
+            }
+        },
+        "actuator.ReadinessCheck": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "connected"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "UP"
+                }
+            }
+        },
+        "actuator.ReadinessResponse": {
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/actuator.ReadinessCheck"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "example": "UP"
                 }
             }
         }

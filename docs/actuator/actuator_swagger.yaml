@@ -1,5 +1,17 @@
 basePath: /actuator
 definitions:
+  actuator.InfoResponse:
+    properties:
+      environment:
+        example: production
+        type: string
+      service:
+        example: user-service
+        type: string
+      version:
+        example: 1.0.5
+        type: string
+    type: object
   actuator.LivenessResponse:
     properties:
       status:
@@ -70,6 +82,19 @@ paths:
           schema:
             $ref: '#/definitions/actuator.ReadinessResponse'
       summary: Проверка приложения к приему трафика
+      tags:
+      - Actuator
+  /info:
+    get:
+      description: Информация о работающем приложении
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/actuator.InfoResponse'
+      summary: Информация о приложении
       tags:
       - Actuator
 swagger: "2.0"

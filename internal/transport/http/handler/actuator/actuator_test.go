@@ -33,24 +33,19 @@ func TestLiveness(t *testing.T) {
 	handler := Liveness()
 	req := httptest.NewRequest("GET", "/liveness", nil)
 
-	// Добавляем логгер в контекст, так как хендлер его ожидает
 	req = req.WithContext(context.WithValue(req.Context(), loggerKey, zap.NewNop()))
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)
 
-	// 1. Проверяем статус код
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	// 2. Десериализуем ответ
 	var resp LivenessResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &resp)
 
-	// 3. Проверяем данные
 	require.NoError(t, err, "Ответ должен быть валидным JSON")
 	assert.Equal(t, "UP", resp.Status)
 
-	// Проверяем, что таймштамп не пустой и парсится (RFC3339)
 	_, err = time.Parse(time.RFC3339, resp.Timestamp)
 	assert.NoError(t, err, "Timestamp должен соответствовать формату RFC3339")
 }
@@ -76,14 +71,14 @@ func TestInfo(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	// Проверяем тело ответа
-	var resp map[string]string
+	var resp InfoResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &resp)
-	assert.NoError(t, err)
 
-	assert.Equal(t, "test-app", resp["service"]) // Ключ из хендлера: "service"
-	assert.Equal(t, "1.2.3", resp["version"])    // Ключ из хендлера: "version"
-	assert.Equal(t, "test", resp["environment"])
+	require.NoError(t, err, "Ответ должен соответствовать структуре InfoResponse")
+
+	assert.Equal(t, cfg.Logging.ServiceName, resp.Service)
+	assert.Equal(t, cfg.Logging.ServiceVersion, resp.Version)
+	assert.Equal(t, cfg.Environment, resp.Environment)
 }
 
 func TestReadiness_Integration(t *testing.T) {
@@ -103,12 +98,10 @@ func TestReadiness_Integration(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		// Десериализуем ответ в структуру
 		var resp ReadinessResponse
 		err := json.Unmarshal(rr.Body.Bytes(), &resp)
 		require.NoError(t, err)
 
-		// Точные проверки полей
 		assert.Equal(t, "UP", resp.Status)
 		assert.Equal(t, "UP", resp.Checks["database"].Status)
 		assert.Contains(t, resp.Checks["database"].Message, "Версия: 10")

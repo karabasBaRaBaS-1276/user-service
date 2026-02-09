@@ -9,20 +9,33 @@ import (
 	"go.uber.org/zap"
 )
 
+type InfoResponse struct {
+	Service     string `json:"service" example:"user-service"`
+	Version     string `json:"version" example:"1.0.5"`
+	Environment string `json:"environment" example:"production"`
+}
+
+// Info godoc
+// @Summary      Информация о приложении
+// @Description  Информация о работающем приложении
+// @Tags         Actuator
+// @Produce      json
+// @Success      200  {object}  InfoResponse
+// @Router       /info [get]
 func Info(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		logger := middleware.FromContext(r.Context())
 
-		resp := map[string]any{
-			"service":     cfg.Logging.ServiceName,
-			"version":     cfg.Logging.ServiceVersion,
-			"environment": cfg.Environment,
+		infoResponse := InfoResponse{
+			Service:     cfg.Logging.ServiceName,
+			Version:     cfg.Logging.ServiceVersion,
+			Environment: cfg.Environment,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
+		if err := json.NewEncoder(w).Encode(infoResponse); err != nil {
 			logger.Error("failed to encode info response", zap.Error(err))
 		}
 	}

@@ -179,13 +179,12 @@ Pipeline автоматически запускается:
 
 ```bash
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
-```
 
-Запуск проверки:
-
-```bash
+# Запуск проверки
 golangci-lint run
 golangci-lint run --build-tags=integration
+
+# Запуск тестов с определением % покрытия
 go test -v -count=1 ./... -cover
 go test -v -count=1 -tags=integration ./... -cover
 ```
@@ -195,8 +194,8 @@ go test -v -count=1 -tags=integration ./... -cover
 Для обновления документации Actuator необходимо наличие установленной утилиты `swag`:
 
 ```bash
-go install [github.com/swaggo/swag/cmd/swag@latest](https://github.com/swaggo/swag/cmd/swag@latest)
+go install github.com/swaggo/swag/cmd/swag@v1.16.4
 
-# Генерация OpenAPI 3.0 спецификации для Actuator
+# Генерация OpenAPI 2.0 спецификации для Actuator
 swag init -g cmd/server/main.go -o docs/actuator --instanceName actuator --outputTypes go,yaml
 ```

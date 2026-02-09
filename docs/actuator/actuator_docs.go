@@ -68,9 +68,46 @@ const docTemplateactuator = `{
                     }
                 }
             }
+        },
+        "/info": {
+            "get": {
+                "description": "Информация о работающем приложении",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Actuator"
+                ],
+                "summary": "Информация о приложении",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/actuator.InfoResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "actuator.InfoResponse": {
+            "type": "object",
+            "properties": {
+                "environment": {
+                    "type": "string",
+                    "example": "production"
+                },
+                "service": {
+                    "type": "string",
+                    "example": "user-service"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.0.5"
+                }
+            }
+        },
         "actuator.LivenessResponse": {
             "type": "object",
             "properties": {

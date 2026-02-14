@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS gloss_auth_client;

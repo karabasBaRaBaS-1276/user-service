@@ -1,5 +1,7 @@
 # user-service
 
+[![CI Status](https://github.com/karabasBaRaBaS-1276/user-service/actions/workflows/ci.yml/badge.svg)](https://github.com/karabasBaRaBaS-1276/user-service/actions/workflows/ci.yml)
+
 ## Описание
 
 `user-service` — бэкенд‑сервис управления пользователями и их аутентификацией, реализованный на Go.
@@ -41,20 +43,26 @@
 
 Высокоуровневая структура:
 
-```
+```text
 user-service/
   ├── api/                    // OpenAPI контракт (временный)
-  ├── cmd/                    // точки входа (main)
-  ├── docs/                   // документация mkdocs
+  ├── cmd/
+  │   ├── server/             // основной HTTP сервер
+  ├── config/                 // файлы конфигураций для разных окружений
+  ├── docs/
+  │   ├── actuator/           // Сгенерированный Swagger для системных ручек
+  │   └── ...                 // Прочая документация (mkdocs)
   ├── internal/
   │   ├── app/                // сборка и запуск приложения
+  │   ├── config/             // конфигурации
   │   ├── auth/               // аутентификация и токены
   │   ├── user/               // домен пользователей
   │   ├── transport/http/     // HTTP handlers, router, middleware
   │   ├── service/            // бизнес-логика (use cases).
   │   ├── repository/         // работа с хранилищем
   │   └── domain/             // чистые структуры и бизнес-типы
-  ├── pkg/                    // для пакетов, которые могут использоваться извне
+  ├── pkg/
+  │   └── logger/             // публичный логгер
   ├── migrations/             // миграции для БД
   ├── go.mod
   └── README.md
@@ -62,19 +70,36 @@ user-service/
 
 ---
 
-## API и OpenAPI
+## API и Документация
 
-В проекте используется OpenAPI для описания HTTP API.
+В проекте используется гибридный подход к документированию и разработке API.
+Сервис предоставляет интерактивную документацию Swagger UI, разделенную по зонам ответственности:
 
-На текущем этапе:
+### 1. Бизнес-логика (Person API) — API-First
 
-* спецификация `api/openapi.yaml` поддерживается вручную;
-* файл используется как временный контракт.
+Для основных бизнес-интерфейсов используется подход "сначала контракт".
 
-Планируемый переход:
+* **Источник истины:** `api/openapi.yaml` (встроено в бинарник через `embedded-spec: true`).
+* **Реализация:** Автоматическая кодогенерация интерфейсов, моделей и "строгого" сервера с помощью `oapi-codegen`.
+* **Артефакты:** `internal/transport/http/handler/user/*_gen.go`.
+* **Swagger UI:** http://localhost:8090/user-service/swagger/api/ , где `localhost:8090` менятся на хост развертывания
+* **Спецификация (JSON):** http://localhost:8090/user-service/swagger/openapi.json , где `localhost:8090` менятся на хост развертывания
 
-* OpenAPI будет генерироваться автоматически из Go‑кода на основе аннотаций HTTP‑обработчиков;
-* ручная спецификация будет удалена после завершения миграции.
+### 2. Инфраструктурный слой (Actuator) — Code-First
+
+Документация для мониторинга и управления состоянием приложения. Сгенерирована на основе декларативных комментариев в коде и `swaggo`.
+
+* **Источник истины:** Комментарии к хендлерам в `internal/transport/http/handler/actuator/`.
+* **Артефакт:** `docs/actuator/actuator_swagger.yaml`.
+* **Swagger UI:** http://localhost:8090/user-service/swagger/api/ , где `localhost:8090` менятся на хост развертывания
+
+### 3. Эндпоинты мониторинга (Healthchecks)
+
+Используются оркестраторами (Kubernetes/Docker) для контроля состояния сервиса:
+
+* `GET /actuator/health/liveness` — проверка того, что сервис запущен.
+* `GET /actuator/health/readiness` — проверка готовности (наличие связи с БД).
+* `GET /actuator/info` — информация о версии и среде окружения.
 
 ---
 
@@ -116,3 +141,121 @@ API, структура пакетов и внутренняя реализац�
 * разработки и развития сервиса управления пользователями;
 * использования в качестве backend‑компонента другими приложениями;
 * возможного подключения фронтенд‑клиентов (web, admin UI и др.).
+
+## Требования к базе данных
+
+* Сервис использует PostgreSQL.
+* Есть интеграционные автотесты.
+* Для корректного отображения сообщений об ошибках рекомендуется,
+чтобы параметр `lc_messages` был установлен в `Russian_Russia.utf8`.
+
+Подробности см. в [docs/database.md](docs/database.md).
+
+## Флаги запуска
+
+Поддерживаются следующие флаги запуска:
+
+* `--config` - Путь до файла конфигурации, переопределяющий умолчания
+* `--version` - Показать информацию о сбоке и выйти
+* `--env` - Окружение (development, production, staging)
+* `--init-app` - Инициировать приложение и выйти
+
+Примеры:
+
+```bash
+go run cmd/server/main.go --env production
+go run cmd/server/main.go --config config/production.yaml
+go run cmd/server/main.go --version true
+go run cmd/server/main.go --init-app true
+// Переопределение переменных из команды запуска
+DB_PASSWORD=go_user_service JWT_SECRET=test go run cmd/server/main.go --config config/production.yaml
+```
+
+## CI
+
+Проект использует GitHub Actions для:
+
+* сборки приложения,
+* статического анализа кода,
+* запуска unit и integration тестов.
+
+Pipeline автоматически запускается:
+
+* при каждом push в ветку `trunk`,
+* при открытии pull request в `trunk`.
+
+Для integration-тестов используется PostgreSQL,
+запускаемый как service container в GitHub Actions.
+
+Для реализации Api-First подхода используем `go tool` для генератора
+
+Локальная проверка линтером:
+Установка версии
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+
+# Запуск проверки
+golangci-lint run
+golangci-lint run --build-tags=integration
+
+# Запуск тестов с определением % покрытия
+go test -v -count=1 ./... -cover
+go test -v -count=1 -tags=integration ./... -cover
+```
+
+## Генерация документации и кода
+
+В проекте используется два вида генерации:
+
+### 1. Swaggo (Code-First) для actuator ручек
+
+Генерирует Swagger UI для системных эндпоинтов на основе аннотаций в коде.
+
+```bash
+# Установка (если не установлен)
+go install github.com/swaggo/swag/cmd/swag@v1.16.4
+
+# Генерация OpenAPI 2.0 спецификации для Actuator
+swag init -g cmd/server/main.go -o docs/actuator --instanceName actuator --outputTypes go,yaml
+```
+
+## 2. Генерация кода (API-First) используя oapi-codegen
+
+Для генерации серверного скелета и моделей из OpenAPI контракта используется `oapi-codegen`, зафиксированный через механизм **Go Tooling** (доступно в Go 1.24+).
+
+Для использования **Go Tooling** механизма была выполнена команда
+
+```bash
+go get -tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+```
+
+которая внесла изменения в `go.mod` и `go.sum` файлы и скачала сам бинарник во внутренние папки Go.
+
+Для проверки версии можно выполнить команду:
+
+```bash
+go tool oapi-codegen --version
+```
+
+Для генерации выполните:
+
+```bash
+# Запуск генерации для всех пакетов, содержащих //go:generate
+go generate ./...
+
+# Или прямой вызов через go tool:
+go tool oapi-codegen -config api/config.yaml api/openapi.yaml
+```
+
+> При кодогенерации выбран подход -> **Изолированный транспортный слой**
+
+Весь код генерируется в пакет `internal/transport/http/handler/user/`.
+
+**Архитектурное решение:**
+
+Сгенерированные структуры (DTO) используются исключительно для HTTP-коммуникации. Это гарантирует:
+
+* **Чистоту Domain-слоя**: бизнес-логика не зависит от формата JSON или сторонних библиотек генерации.
+* **Стабильность**: изменения в OpenAPI контракте требуют правок только в мапперах транспортного слоя, не затрагивая ядро системы.
+* **Типобезопасность**: Strict-интерфейс сервера гарантирует корректность обработки запросов на уровне компиляции.

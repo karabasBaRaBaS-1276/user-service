@@ -1,0 +1,5 @@
+# ЭТАП 1: Генерируем только модели данных в Domain-слой
+package: userapi
+generate:
+  models: true
+output: ../internal/transport/http/handler/user/models_gen.go # Один шаг назад в корень, затем в internal

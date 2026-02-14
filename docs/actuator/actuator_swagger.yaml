@@ -1,0 +1,104 @@
+basePath: /actuator
+definitions:
+  actuator.InfoResponse:
+    properties:
+      environment:
+        example: production
+        type: string
+      service:
+        example: user-service
+        type: string
+      version:
+        example: 1.0.5
+        type: string
+    type: object
+  actuator.LivenessResponse:
+    properties:
+      status:
+        example: UP
+        type: string
+      timestamp:
+        example: "2026-02-09T15:04:05Z"
+        type: string
+    type: object
+  actuator.ReadinessCheck:
+    properties:
+      message:
+        example: connected
+        type: string
+      status:
+        example: UP
+        type: string
+    type: object
+  actuator.ReadinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          $ref: '#/definitions/actuator.ReadinessCheck'
+        type: object
+      status:
+        example: UP
+        type: string
+    type: object
+host: localhost:8090
+info:
+  contact:
+    name: API Support
+    url: https://github.com/karabasBaRaBaS-1276/user-service
+  description: Инфраструктурный слой (Actuator) — Code-First с Actuator-эндпоинтами.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: https://github.com/karabasBaRaBaS-1276/user-service
+  title: API с Actuator-эндпоинтами
+  version: "1.0"
+paths:
+  /health/liveness:
+    get:
+      description: Простая проверка работоспособности, чтобы узнать, запущено ли приложение
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/actuator.LivenessResponse'
+      summary: Проверка приложения на запуск
+      tags:
+      - Actuator
+  /health/readiness:
+    get:
+      description: Простая проверка работоспособности, чтобы узнать, готово ли приложение
+        принимать запросы на обработку
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/actuator.ReadinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/actuator.ReadinessResponse'
+      summary: Проверка приложения к приему трафика
+      tags:
+      - Actuator
+  /info:
+    get:
+      description: Информация о работающем приложении
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/actuator.InfoResponse'
+      summary: Информация о приложении
+      tags:
+      - Actuator
+swagger: "2.0"
+tags:
+- description: Эндпоинты для мониторинга состояния приложения, сбора метрик и доступа
+    к информации о среде
+  name: Actuator

@@ -1,0 +1,7 @@
+# ЭТАП 2: Генерируем серверный интерфейс в Transport-слой
+package: userapi
+generate:
+  std-http-server: true
+  strict-server: true
+  embedded-spec: true
+output: ../internal/transport/http/handler/user/server_gen.go

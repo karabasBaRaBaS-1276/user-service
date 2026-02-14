@@ -1,0 +1,38 @@
+# Конфиг для пром контура
+environment: "production"
+
+# Конфигурация сервера
+server:
+  port: "8090"
+  read_timeout: "15s"
+  write_timeout: "15s"
+  idle_timeout: "60s"
+  shutdown_timeout: "30s"
+
+# Конфигурация для работы с базой данных
+database:
+  host: "${DB_HOST:-localhost}"
+  port: "5432"
+  user: "go_user_service"
+  password: "${DB_PASSWORD}"
+  name: "my_bank"
+  ssl_mode: "disable"
+
+# Конфигурация для логирования
+logging:
+  level: "info"
+  file_path: "./var/log/service.json"
+  max_size_mb: 10
+  max_backups: 7
+  max_age_days: 5
+  enable_json: true
+
+# Конфигурация модуля авторизации
+auth:
+  jwt_secret: "${JWT_SECRET}"
+  token_duration: "24h"
+
+# Конфигурация для сбора метрик
+metric:
+  enable: false
+  port: 9090

@@ -1,0 +1,40 @@
+# Встроенная (embedded) конфигурация по умолчанию
+environment: "development"
+service_name: "user-service"
+
+# Конфигурация сервера
+server:
+  port: "8080"
+  read_timeout: "15s"
+  write_timeout: "15s"
+  idle_timeout: "60s"
+  shutdown_timeout: "30s"
+
+# Конфигурация для работы с базой данных
+database:
+  host: "localhost"
+  port: "5432"
+  user: "go_user_service"
+  password: "go_user_service"
+  name: "my_bank"         # Имя БД
+  schema: "user_service"  # Имя схемы в БД
+  ssl_mode: "disable"
+
+# Конфигурация для логирования
+logging:
+  level: "debug"
+  file_path: "./var/log/service.json"
+  max_size_mb: 10
+  max_backups: 7
+  max_age_days: 5
+  enable_json: true
+
+# Конфигурация модуля авторизации
+auth:
+  jwt_secret: "our-secret-key-change-in-production"
+  token_duration: "24h"
+
+# Конфигурация для сбора метрик
+metric:
+  enable: false
+  port: 9090

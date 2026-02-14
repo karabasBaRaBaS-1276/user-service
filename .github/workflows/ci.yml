@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ "trunk" ]
+  pull_request:
+    branches: [ "trunk" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.5'
+          cache: true
+
+      - name: Display Go version
+        run: go version
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Go vet (статический анализатор логических ошибок)
+        run: go vet ./...
+
+      - name: GolangCI-Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.8.0
+          args: --timeout=5m --build-tags=integration ./...
+
+      - name: Run all tests
+        run: go test -v -count=1 -tags=integration ./...

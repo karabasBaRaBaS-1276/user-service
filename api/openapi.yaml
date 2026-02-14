@@ -8,7 +8,7 @@ info:
     email: r.osench@inbox.ru
     url: https://t.me/r_osench
 servers:
-  - url: http://localhost:8080/api/v1
+  - url: http://localhost:8090/user-service/api/v1
 tags:
   - name: user
     description: 'Всё, что можно сделать с пользователем'
@@ -27,7 +27,7 @@ paths:
         Регистрирует в системе нового пользователя
       operationId: createUserFull
       parameters:
-        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/x-request-id'
         - name: code
           in: query
           description: 'Код авторизации, полученный в результате запроса /oauth/authorize'
@@ -54,7 +54,7 @@ paths:
               description: 'URI для перенаправления после успешной аутентификации'
               schema:
                 type: string
-                example: 'http://my-bank.ru/ouath/callback'
+                example: 'http://my-bank.ru/oauth/callback'
             Cache-Control:
               description: 'Управление кэшированием HTTP-ответа'
               schema:
@@ -79,7 +79,7 @@ paths:
       description: 'Это может сделать только авторизованный пользователь'
       operationId: getUserByUsername
       parameters:
-        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/x-request-id'
         - $ref: '#/components/parameters/username'
       responses:
         '200':
@@ -103,7 +103,7 @@ paths:
       description: 'Это может сделать только авторизованный пользователь'
       operationId: updateUserByUsername
       parameters:
-        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/x-request-id'
         - $ref: '#/components/parameters/username'
       requestBody:
         description: 'Обновить существующего пользователя'
@@ -131,7 +131,7 @@ paths:
       description: 'Это может сделать только авторизованный пользователь'
       operationId: deleteUserByUsername
       parameters:
-        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/x-request-id'
         - $ref: '#/components/parameters/username'
       responses:
         '204':
@@ -154,7 +154,7 @@ paths:
       description: 'Если вы случайно удалили пользователя с помощью DELETE /user/{username}, то настоящий метод позволит вам его восстановить'
       operationId: restoreUserByUsername
       parameters:
-        - $ref: '#/components/parameters/mb-request-id'
+        - $ref: '#/components/parameters/x-request-id'
         - $ref: '#/components/parameters/username'
       responses:
         '204':
@@ -196,7 +196,7 @@ paths:
           required: true
           schema:
             type: string
-          example: 'http://my-bank.ru/ouath/callback'
+          example: 'http://my-bank.ru/oauth/callback'
         - name: scope
           in: query
           description: 'Область доступа (scope). Определяет, к каким ресурсам приложение запрашивает доступ'
@@ -229,7 +229,7 @@ paths:
               description: 'URI для перенаправления после успешной аутентификации'
               schema:
                 type: string
-                example: 'http://my-bank.ru/ouath/callback'
+                example: 'http://my-bank.ru/oauth/callback'
             Cache-Control:
               description: 'Управление кэшированием HTTP-ответа'
               schema:
@@ -276,7 +276,7 @@ paths:
               description: 'URI для перенаправления после успешной аутентификации'
               schema:
                 type: string
-                example: 'http://my-bank.ru/ouath/callback'
+                example: 'http://my-bank.ru/oauth/callback'
             Cache-Control:
               description: 'Управление кэшированием HTTP-ответа'
               schema:
@@ -356,8 +356,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
-    mb-request-id:
-      name: mb-request-id
+    x-request-id:
+      name: X-Request-ID
       in: header
       description: 'Уникальный идентификатор запроса'
       required: true
@@ -477,7 +477,7 @@ components:
         redirect_uri:
           description: 'URI, который ранее указывался в запросе /oauth/authorize с целью проверки на сервере авторизации'
           type: string
-          example: 'http://my-bank.ru/ouath/callback'
+          example: 'http://my-bank.ru/oauth/callback'
         client_id:
           description: 'Уникальный идентификатор приложения'
           type: string
